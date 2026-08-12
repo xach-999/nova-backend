@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: nova-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: nova_user
+      POSTGRES_PASSWORD: nova_password
+      POSTGRES_DB: nova_shop
+
+    ports:
+      - "5434:5432"
+
+    volumes:
+      - nova_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  nova_postgres_data:
