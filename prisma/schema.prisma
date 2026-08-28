@@ -13,6 +13,19 @@ datasource db {
   provider = "postgresql"
 }
 
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum Gender {
+  MEN
+  WOMEN
+  KIDS
+  UNISEX
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -21,4 +34,101 @@ model User {
   lastName  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id        String     @id @default(uuid())
+  name      String
+  slug      String     @unique
+  parentId  String?
+  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Category[] @relation("CategoryHierarchy")
+  products  Product[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([parentId])
+}
+
+model Color {
+  id            String           @id @default(uuid())
+  name          String           @unique
+  hexCode       String
+  variants      ProductVariant[]
+  productImages ProductImage[]
+}
+
+model Size {
+  id        String           @id @default(uuid())
+  name      String           @unique
+  sortOrder Int
+  variants  ProductVariant[]
+
+  @@index([sortOrder])
+}
+
+model Product {
+  id               String        @id @default(uuid())
+  name             String
+  slug             String        @unique
+  description      String?
+  shortDescription String?
+  basePrice        Decimal       @db.Decimal(10, 2)
+  compareAtPrice   Decimal?      @db.Decimal(10, 2)
+  categoryId       String
+  category         Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  gender           Gender
+  status           ProductStatus @default(DRAFT)
+  isFeatured       Boolean       @default(false)
+  variants         ProductVariant[]
+  images           ProductImage[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([categoryId])
+  @@index([gender])
+  @@index([status])
+  @@index([isFeatured])
+}
+
+model ProductVariant {
+  id             String   @id @default(uuid())
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  colorId        String
+  color          Color    @relation(fields: [colorId], references: [id], onDelete: Restrict)
+  sizeId         String
+  size           Size     @relation(fields: [sizeId], references: [id], onDelete: Restrict)
+  sku            String   @unique
+  price          Decimal? @db.Decimal(10, 2)
+  compareAtPrice Decimal? @db.Decimal(10, 2)
+  stockQuantity  Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([productId, colorId, sizeId])
+  @@index([productId])
+  @@index([colorId])
+  @@index([sizeId])
+  @@index([isActive])
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  colorId   String?
+  color     Color?   @relation(fields: [colorId], references: [id], onDelete: SetNull)
+  url       String
+  altText   String?
+  position  Int      @default(0)
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@index([colorId])
+  @@index([productId, colorId])
+  @@index([productId, position])
 }
